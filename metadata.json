@@ -1,0 +1,6 @@
+{
+  "name": "iOS Status Bar",
+  "description": "Super realistic iOS Status Bar application with automatic transparency, custom alignment, and floating overlay.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
