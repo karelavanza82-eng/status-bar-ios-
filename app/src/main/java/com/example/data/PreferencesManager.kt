@@ -15,7 +15,7 @@ class PreferencesManager(private val context: Context) {
         val KEY_SERVICE_ACTIVE = booleanPreferencesKey("service_active")
         val KEY_NOTCH_STYLE = stringPreferencesKey("notch_style") // "Dynamic Island", "Notch", "Clean Bar"
         val KEY_CLOCK_POSITION = stringPreferencesKey("clock_position") // "Left", "Center", "Right"
-        val KEY_CARRIER_NAME = stringPreferencesKey("carrier_name") // e.g. "Carrier", "Telkomsel", "Apple"
+        val KEY_CARRIER_NAME = stringPreferencesKey("carrier_name")
         val KEY_SHOW_SIGNAL = booleanPreferencesKey("show_signal")
         val KEY_SHOW_WIFI = booleanPreferencesKey("show_wifi")
         val KEY_SHOW_BATTERY = booleanPreferencesKey("show_battery")
@@ -23,6 +23,7 @@ class PreferencesManager(private val context: Context) {
         val KEY_TRANSPARENT = booleanPreferencesKey("transparent") // Always true by default
         val KEY_PADDING_LEFT = intPreferencesKey("padding_left")
         val KEY_PADDING_RIGHT = intPreferencesKey("padding_right")
+        val KEY_COLOR_MODE = stringPreferencesKey("color_mode") // "Auto (System)", "Dark (White Icons)", "Light (Black Icons)"
     }
 
     val preferencesFlow: Flow<StatusBarSettings> = context.dataStore.data
@@ -38,7 +39,8 @@ class PreferencesManager(private val context: Context) {
                 networkType = prefs[KEY_NETWORK_TYPE] ?: "5G",
                 transparent = prefs[KEY_TRANSPARENT] ?: true,
                 paddingLeft = prefs[KEY_PADDING_LEFT] ?: 16,
-                paddingRight = prefs[KEY_PADDING_RIGHT] ?: 16
+                paddingRight = prefs[KEY_PADDING_RIGHT] ?: 16,
+                colorMode = prefs[KEY_COLOR_MODE] ?: "Auto (System)"
             )
         }
 
@@ -80,6 +82,10 @@ class PreferencesManager(private val context: Context) {
             it[KEY_PADDING_RIGHT] = right
         }
     }
+
+    suspend fun updateColorMode(mode: String) {
+        context.dataStore.edit { it[KEY_COLOR_MODE] = mode }
+    }
 }
 
 data class StatusBarSettings(
@@ -93,5 +99,6 @@ data class StatusBarSettings(
     val networkType: String,
     val transparent: Boolean,
     val paddingLeft: Int,
-    val paddingRight: Int
+    val paddingRight: Int,
+    val colorMode: String
 )

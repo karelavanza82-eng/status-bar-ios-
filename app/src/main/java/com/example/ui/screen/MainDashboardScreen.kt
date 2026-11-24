@@ -51,20 +51,19 @@ fun MainDashboardScreen() {
             networkType = "5G",
             transparent = true,
             paddingLeft = 16,
-            paddingRight = 16
+            paddingRight = 16,
+            colorMode = "Auto (System)"
         )
     )
     val settings = settingsFlow.value
 
-    var selectedTab by remember { mutableIntStateOf(0) } // 0: Preview & Overlay, 1: Layout & Customizer, 2: Style
+    var selectedTab by remember { mutableIntStateOf(0) } // 0: Preview & Overlay, 1: Layout, 2: Style & Color
     var carrierInput by remember { mutableStateOf(settings.carrierName) }
 
-    // Update carrier input when settings change
     LaunchedEffect(settings.carrierName) {
         carrierInput = settings.carrierName
     }
 
-    // Overlay permission launcher
     val overlayPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) {
@@ -107,13 +106,13 @@ fun MainDashboardScreen() {
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
                     icon = { Icon(Icons.Default.Tune, contentDescription = "Layout") },
-                    label = { Text("Kanan & Kiri") }
+                    label = { Text("Tata Letak") }
                 )
                 NavigationBarItem(
                     selected = selectedTab == 2,
                     onClick = { selectedTab = 2 },
-                    icon = { Icon(Icons.Default.Palette, contentDescription = "Style") },
-                    label = { Text("Gaya & Notch") }
+                    icon = { Icon(Icons.Default.Palette, contentDescription = "Style & Color") },
+                    label = { Text("Gaya & Warna") }
                 )
             }
         }
@@ -128,7 +127,6 @@ fun MainDashboardScreen() {
         ) {
             when (selectedTab) {
                 0 -> {
-                    // Preview Tab with Interactive Wallpaper Simulator
                     PreviewSimulatorSection(
                         settings = settings,
                         onToggleService = { active ->
@@ -155,7 +153,6 @@ fun MainDashboardScreen() {
                     )
                 }
                 1 -> {
-                    // Layout & Alignment Customizer ("Bisa diatur kanan kiri sesuka hati")
                     LayoutCustomizerSection(
                         settings = settings,
                         onClockPositionChanged = { scope.launch { preferencesManager.updateClockPosition(it) } },
@@ -172,10 +169,10 @@ fun MainDashboardScreen() {
                     )
                 }
                 2 -> {
-                    // Style & Notch Tab
                     StyleCustomizerSection(
                         settings = settings,
-                        onNotchStyleChanged = { scope.launch { preferencesManager.updateNotchStyle(it) } }
+                        onNotchStyleChanged = { scope.launch { preferencesManager.updateNotchStyle(it) } },
+                        onColorModeChanged = { scope.launch { preferencesManager.updateColorMode(it) } }
                     )
                 }
             }
@@ -214,25 +211,53 @@ fun PreviewSimulatorSection(
 
             HorizontalDivider()
 
-            // Live Simulator Phone Frame with automatic transparency
+            // Live Simulator Phone Frame with dynamic background testing (Dark vs Light)
+            var isSimulatorDark by remember { mutableStateOf(true) }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Uji Warna Latar Belakang (Test Background)", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = isSimulatorDark,
+                        onClick = { isSimulatorDark = true },
+                        label = { Text("Latar Hitam") }
+                    )
+                    FilterChip(
+                        selected = !isSimulatorDark,
+                        onClick = { isSimulatorDark = false },
+                        label = { Text("Latar Terang") }
+                    )
+                }
+            }
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(340.dp)
+                    .height(300.dp)
                     .clip(RoundedCornerShape(32.dp))
                     .background(
-                        Brush.verticalGradient(
-                            listOf(Color(0xFF1E1B4B), Color(0xFF312E81), Color(0xFF4C1D95))
-                        )
+                        if (isSimulatorDark)
+                            Brush.verticalGradient(listOf(Color(0xFF0F172A), Color(0xFF1E293B)))
+                        else
+                            Brush.verticalGradient(listOf(Color(0xFFF1F5F9), Color(0xFFCBD5E1)))
                     )
             ) {
-                // The iOS Status Bar rendered inside simulator
+                // Modified settings for preview simulator based on test background
+                val previewSettings = settings.copy(
+                    colorMode = if (settings.colorMode == "Auto (System)") {
+                        if (isSimulatorDark) "Dark (White Icons)" else "Light (Black Icons)"
+                    } else settings.colorMode
+                )
+
                 IOSStatusBarView(
-                    settings = settings,
+                    settings = previewSettings,
                     modifier = Modifier.align(Alignment.TopCenter)
                 )
 
-                // Simulated iOS Lock Screen Content inside wallpaper
                 Column(
                     modifier = Modifier
                         .align(Alignment.Center)
@@ -241,33 +266,20 @@ fun PreviewSimulatorSection(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "9:41",
-                        color = Color.White,
-                        fontSize = 56.sp,
-                        fontWeight = FontWeight.Light,
-                        letterSpacing = (-1).sp
+                        text = "1:55",
+                        color = if (isSimulatorDark) Color.White else Color.Black,
+                        fontSize = 48.sp,
+                        fontWeight = FontWeight.Light
                     )
                     Text(
-                        text = "Monday, November 24",
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 16.sp,
+                        text = if (isSimulatorDark) "Latar Belakang Hitam -> Ikon Putih Otomatis" else "Latar Belakang Terang -> Ikon Hitam Otomatis",
+                        color = if (isSimulatorDark) Color.White.copy(alpha = 0.7f) else Color.Black.copy(alpha = 0.7f),
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
-
-                // Bottom home indicator bar
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 12.dp)
-                        .width(130.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(Color.White.copy(alpha = 0.6f))
-                )
             }
 
-            // Info Card about Auto Transparency & No Cut
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
@@ -280,8 +292,8 @@ fun PreviewSimulatorSection(
                 ) {
                     Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Column {
-                        Text("100% Otomatis Transparan & Tanpa Terpotong", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Text("Status bar menyesuaikan otomatis transparan tanpa perlu seting rumit.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Baterai Asli (Real Battery %)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text("Persentase baterai sesuai dengan perangkat Anda secara presisi dengan ukuran yang lebih besar & jelas.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -307,7 +319,6 @@ fun LayoutCustomizerSection(
         Text("Atur Tata Letak Kanan & Kiri", fontWeight = FontWeight.Bold, fontSize = 18.sp)
         Text("Sesuaikan posisi jam, operator, dan ikon sesuai keinginan Anda.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-        // Clock Position
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -330,7 +341,6 @@ fun LayoutCustomizerSection(
             }
         }
 
-        // Carrier & Network Type
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -362,7 +372,6 @@ fun LayoutCustomizerSection(
             }
         }
 
-        // Toggles for Icons
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -397,7 +406,6 @@ fun LayoutCustomizerSection(
             }
         }
 
-        // Padding Controls
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -417,13 +425,49 @@ fun LayoutCustomizerSection(
 @Composable
 fun StyleCustomizerSection(
     settings: StatusBarSettings,
-    onNotchStyleChanged: (String) -> Unit
+    onNotchStyleChanged: (String) -> Unit,
+    onColorModeChanged: (String) -> Unit
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("Pilih Gaya Notch & Dynamic Island", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-        Text("Pilih tampilan desain atas ala iPhone terbaru.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("Pilih Gaya Notch & Warna Otomatis", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        Text("Sesuaikan tampilan dan adaptasi warna otomatis sesuai latar belakang.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+        // Color Adaptation Mode
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Adaptasi Warna Otomatis (Auto Contrast)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text("Latar gelap -> Ikon putih. Latar terang -> Ikon hitam.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                listOf(
+                    "Auto (System)" to "Otomatis menyesuaikan sistem / latar belakang",
+                    "Dark (White Icons)" to "Selalu Putih (Cocok untuk latar hitam)",
+                    "Light (Black Icons)" to "Selalu Hitam (Cocok untuk latar terang)"
+                ).forEach { (mode, desc) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onColorModeChanged(mode) }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(mode, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(desc, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        RadioButton(
+                            selected = settings.colorMode == mode,
+                            onClick = { onColorModeChanged(mode) }
+                        )
+                    }
+                }
+            }
+        }
 
         val styles = listOf(
             "Dynamic Island" to "Kapsul interaktif ala iPhone 15/16 Pro",
